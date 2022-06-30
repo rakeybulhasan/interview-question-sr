@@ -11,12 +11,14 @@
         <form action="" method="get" class="card-header">
             <div class="form-row justify-content-between">
                 <div class="col-md-2">
-                    <input type="text" name="title" placeholder="Product Title" class="form-control">
+                    <input type="text" name="title" value="{{isset($filters['title']) && !empty($filters['title'])? $filters['title']:'' }}" placeholder="Product Title" class="form-control">
                 </div>
                 <div class="col-md-2">
-                    <select name="variant" id="" class="form-control">
+                    {!! Form::select('variant', $variants,[isset($filters['variant']) && !empty($filters['variant'])? $filters['variant']:''], array('class' => 'form-control','placeholder'=>'Select Variant')) !!}
 
-                    </select>
+                    {{--<select name="variant" id="" class="form-control">
+
+                    </select>--}}
                 </div>
 
                 <div class="col-md-3">
@@ -24,12 +26,12 @@
                         <div class="input-group-prepend">
                             <span class="input-group-text">Price Range</span>
                         </div>
-                        <input type="text" name="price_from" aria-label="First name" placeholder="From" class="form-control">
-                        <input type="text" name="price_to" aria-label="Last name" placeholder="To" class="form-control">
+                        <input type="text" name="price_from" value="{{isset($filters['price_from']) && !empty($filters['price_from'])? $filters['price_from']:0 }}" aria-label="First name" placeholder="From" class="form-control">
+                        <input type="text" name="price_to" value="{{isset($filters['price_to']) && !empty($filters['price_to'])? $filters['price_to']:'' }}" aria-label="Last name" placeholder="To" class="form-control">
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="date" placeholder="Date" class="form-control">
+                    <input type="date" name="date" value="{{isset($filters['date']) && !empty($filters['date'])? $filters['date']:'' }}" placeholder="Date" class="form-control">
                 </div>
                 <div class="col-md-1">
                     <button type="submit" class="btn btn-primary float-right"><i class="fa fa-search"></i></button>
@@ -51,36 +53,30 @@
                     </thead>
 
                     <tbody>
-
-                    <tr>
-                        <td>1</td>
-                        <td>T-Shirt <br> Created at : 25-Aug-2020</td>
-                        <td>Quality product in low cost</td>
-                        <td>
-                            <dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">
-
-                                <dt class="col-sm-3 pb-0">
-                                    SM/ Red/ V-Nick
-                                </dt>
-                                <dd class="col-sm-9">
-                                    <dl class="row mb-0">
-                                        <dt class="col-sm-4 pb-0">Price : {{ number_format(200,2) }}</dt>
-                                        <dd class="col-sm-8 pb-0">InStock : {{ number_format(50,2) }}</dd>
+                    @if($products)
+                        @foreach($products as $product)
+                            <tr>
+                                <td>{{$loop->index+1}}</td>
+                                <td>{{$product->title}} <br> Created at : {{$product->created_at->format('d-M-Y')}}</td>
+                                <td>{!! $product->description !!}</td>
+                                <td width="350">
+                                    <dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant_{{$product->id}}">
+                                        {!! $product->productVariantPriceStr() !!}
                                     </dl>
-                                </dd>
-                            </dl>
-                            <button onclick="$('#variant').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more</button>
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('product.edit', 1) }}" class="btn btn-success">Edit</a>
-                            </div>
-                        </td>
-                    </tr>
-
+                                    <button onclick="$('#variant_{{$product->id}}').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more</button>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('product.edit', $product->id) }}" class="btn btn-success">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    @endif
                     </tbody>
 
                 </table>
+
             </div>
 
         </div>
@@ -88,10 +84,11 @@
         <div class="card-footer">
             <div class="row justify-content-between">
                 <div class="col-md-6">
-                    <p>Showing 1 to 10 out of 100</p>
+                    <p>Showing {{ $products->firstItem() }} to {{ $products->lastItem() }} out of  {{ $products->total() }}</p>
                 </div>
-                <div class="col-md-2">
-
+                <div class="col-md-3">
+                    {{ $products->appends($filters)->links() }}
+{{--                    {!! $products->render() !!}--}}
                 </div>
             </div>
         </div>

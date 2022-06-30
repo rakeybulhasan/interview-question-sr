@@ -31,7 +31,13 @@
                                       v-on:vdropzone-removed-file="fileRemoved"></vue-dropzone>
                     </div>
                 </div>
+                    <div class="row">
+                        <div class="col-md-4" v-for="(item,index) in uploadedImages">
+                            <img :src="item.file_path" style="width:100%; margin-bottom: 10px; border: 1px solid #eeeeee; padding: 2px">
+                        </div>
+                    </div>
             </div>
+
 
             <div class="col-md-6">
                 <div class="card shadow mb-4">
@@ -79,7 +85,10 @@
                                 </thead>
                                 <tbody>
                                 <tr v-for="variant_price in product_variant_prices">
-                                    <td>{{ variant_price.title }}</td>
+                                    <td>
+                                        <input type="hidden" class="form-control" v-model="variant_price.id">
+                                        {{ variant_price.title }}
+                                    </td>
                                     <td>
                                         <input type="text" class="form-control" v-model="variant_price.price">
                                     </td>
@@ -118,10 +127,14 @@ export default {
     },
     data() {
         return {
+
+            path: window.location.pathname,
+            id:'',
             product_name: '',
             product_sku: '',
             description: '',
             images: [],
+            uploadedImages: [],
             product_variant: [
                 {
                     option: this.variants[0].id,
@@ -133,9 +146,41 @@ export default {
                 url: "/api/files",
                 thumbnailWidth: 150,
                 maxFilesize: 10,
-                headers: {"My-Awesome-Header": "header value"}
+                headers: {"My-Awesome-Header": "header value"},
+                addRemoveLinks: true
             }
         }
+    },
+    created() {
+        let url= this.path;
+        let arr = {};
+        let urlSplit = url.split('/');
+        axios.get('/product/'+urlSplit[2])
+            .then((res) => {
+                console.log(res.data)
+                this.product_name=res.data.title
+                this.product_sku=res.data.sku
+                this.description=res.data.description
+                this.product_variant_prices=res.data.product_variant_price
+                this.uploadedImages=res.data.product_images
+
+                res.data.product_variant.forEach(item => {
+                    if (!arr[item['id']]){
+                        arr[item['id']] = [];
+                    }
+                    arr[item['id']].push(item['pivot']['variant'])
+                })
+
+                let arrJson = JSON.stringify(arr);
+
+                const myObj = JSON.parse(arrJson);
+
+                let text = [];
+                for (let i in myObj) {
+                    text.push({option:i,tags:myObj[i]});
+                }
+                this.product_variant=text;
+            });
     },
     methods: {
         // it will push a new object into product variant
@@ -180,16 +225,15 @@ export default {
             }, []);
             return ans;
         },
-
         uploadSuccess(file, response) {
             // this.images = response.file;
             this.images.push(response.file);
-            console.log(this.images)
         },
         uploadError(file, message) {
             console.log('An Error Occurred');
         },
         fileRemoved() {},
+
         // store product into database
         saveProduct() {
             let product = {
@@ -200,12 +244,19 @@ export default {
                 product_variant: this.product_variant,
                 product_variant_prices: this.product_variant_prices
             }
-            axios.post('/product', product).then(response => {
+            // console.log(this.images)
+            let url= this.path;
+            let urlSplit = url.split('/');
+
+            axios.patch('/product/'+urlSplit[2], product).then(response => {
                 console.log(response.data);
             }).catch(error => {
                 console.log(error);
             })
-        }
+
+            // console.log(product);
+        },
+
 
 
     },
